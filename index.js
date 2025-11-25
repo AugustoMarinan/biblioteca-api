@@ -2,16 +2,17 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+
+// Middlewares
 import { verifyToken } from './src/middlewares/auth.middleware.js';
+import { isAdmin } from './src/middlewares/admin.middleware.js';
+import { errorHandler } from './src/middlewares/error.middleware.js';
 
 // Inicializar variables de entorno
 dotenv.config();
 
-// 🔥 Inicializar Firebase (evita errores de importación en los controladores)
-import './src/firebase.js'; 
-
-// Middlewares
-import { errorHandler } from './src/middlewares/error.middleware.js';
+// Inicializar Firebase
+import './src/firebase.js';
 
 // Rutas
 import authRoutes from './src/routes/auth.routes.js';
@@ -31,7 +32,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static('src/uploads'));
 
-// 🔥 LOG GLOBAL PARA SABER QUÉ PETICIÓN LLEGA
+// LOG de todas las peticiones
 app.use((req, res, next) => {
   console.log("➡️ Llega petición:", req.method, req.originalUrl);
   next();
@@ -44,16 +45,20 @@ app.use((req, res, next) => {
 app.use('/auth', authRoutes);
 
 /*
-  ✔️ DESPUÉS VAN LAS RUTAS PROTEGIDAS CON JWT
+  ✔️ RUTAS PARA ADMIN (require verifyToken + isAdmin)
 */
-app.use('/api/usuarios', verifyToken, usuariosRoutes);
-app.use('/api/libros', verifyToken, librosRoutes);
-app.use('/api/autores', verifyToken, autoresRoutes);
-app.use('/api/categorias', verifyToken, categoriasRoutes);
+app.use('/api/usuarios', verifyToken, isAdmin, usuariosRoutes);
+app.use('/api/libros', verifyToken, isAdmin, librosRoutes);
+app.use('/api/autores', verifyToken, isAdmin, autoresRoutes);
+app.use('/api/categorias', verifyToken, isAdmin, categoriasRoutes);
+
+/*
+  ✔️ RUTAS PARA USUARIOS LOGUEADOS (admin o user)
+*/
 app.use('/api/prestamos', verifyToken, prestamosRoutes);
 app.use('/api/devoluciones', verifyToken, devolucionesRoutes);
 
-// 🔥 CATCH-ALL 404
+// 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Ruta no encontrada' });
 });
@@ -65,6 +70,7 @@ app.use(errorHandler);
 app.listen(PORT, () => 
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`)
 );
+
 
 
 

@@ -10,12 +10,10 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validación básica
     if (!email || !password) {
       return res.status(400).json({ message: "Email y contraseña son obligatorios" });
     }
 
-    // Buscar usuario por email
     const snapshot = await db
       .collection("usuarios")
       .where("email", "==", email)
@@ -28,22 +26,20 @@ export const login = async (req, res) => {
     const userDoc = snapshot.docs[0];
     const userData = userDoc.data();
 
-    // Validación (solo compara texto por ahora)
     if (userData.password !== password) {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
-    // Crear token
+    // 🔥 TOKEN CON ROL INCLUIDO
     const token = jwt.sign(
       {
         uid: userDoc.id,
         email: userData.email,
+        rol: userData.rol   // 👈 agregado
       },
       process.env.JWT_SECRET,
       { expiresIn: "4h" }
     );
-
-    console.log("🔐 Usuario autenticado:", userDoc.id);
 
     res.json({
       message: "Login exitoso",
@@ -51,6 +47,7 @@ export const login = async (req, res) => {
       user: {
         id: userDoc.id,
         email: userData.email,
+        rol: userData.rol
       },
     });
   } catch (error) {
@@ -59,10 +56,10 @@ export const login = async (req, res) => {
   }
 };
 
-// OPCIONAL: REGISTER
+// REGISTER
 export const register = async (req, res) => {
   try {
-    const { email, password, nombre } = req.body;
+    const { email, password, nombre, rol } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email y contraseña obligatorios" });
@@ -70,8 +67,9 @@ export const register = async (req, res) => {
 
     const nuevo = await db.collection("usuarios").add({
       email,
-      password, // Recomendado: encriptar con bcrypt
+      password, 
       nombre: nombre || "",
+      rol: rol || "user", // 👈 SI NO ENVÍA ROL, ES USER
       creado: new Date(),
     });
 
@@ -81,3 +79,4 @@ export const register = async (req, res) => {
     res.status(500).json({ message: "Error en el servidor" });
   }
 };
+
