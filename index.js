@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
+import { verifyToken } from './src/middlewares/auth.middleware.js';
 
 // Inicializar variables de entorno
 dotenv.config();
@@ -26,7 +27,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middlewares globales
 app.use(cors());
-app.use(express.json());  // <--- NECESARIO
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static('src/uploads'));
 
@@ -36,14 +37,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// 🔥 Rutas principales
+/*  
+  ⚠️ IMPORTANTE:
+  PRIMERO VAN LAS RUTAS PÚBLICAS (SIN TOKEN)
+*/
 app.use('/auth', authRoutes);
-app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/libros', librosRoutes);
-app.use('/api/autores', autoresRoutes);
-app.use('/api/categorias', categoriasRoutes);
-app.use('/api/prestamos', prestamosRoutes);
-app.use('/api/devoluciones', devolucionesRoutes);
+
+/*
+  ✔️ DESPUÉS VAN LAS RUTAS PROTEGIDAS CON JWT
+*/
+app.use('/api/usuarios', verifyToken, usuariosRoutes);
+app.use('/api/libros', verifyToken, librosRoutes);
+app.use('/api/autores', verifyToken, autoresRoutes);
+app.use('/api/categorias', verifyToken, categoriasRoutes);
+app.use('/api/prestamos', verifyToken, prestamosRoutes);
+app.use('/api/devoluciones', verifyToken, devolucionesRoutes);
 
 // 🔥 CATCH-ALL 404
 app.use((req, res) => {
@@ -57,5 +65,6 @@ app.use(errorHandler);
 app.listen(PORT, () => 
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`)
 );
+
 
 
